@@ -16,60 +16,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends -y \
-            bc \
-            bison \
-            build-essential \
-            ca-certificates \
-            ccache \
-            dpkg-dev \
-            dwarves \
-            fakeroot \
-            flex \
-            g++-aarch64-linux-gnu \
-            gcc-aarch64-linux-gnu \
-            git \
-            kmod \
-            libelf-dev \
-            liblz4-tool \
-            libncurses-dev \
-            libssl-dev \
-            lzop \
-            pkg-config \
-            rsync \
-            u-boot-tools \
-            xz-utils
+      - name: Run build script
+        run: ./scripts/ci-build.sh
 
-      - name: Fetch Radxa BSP
-        run: ./bsp/fetch-linux-a733.sh
-
-      - name: Configure kernel
-        env:
-          ARCH: arm64
-          CROSS_COMPILE: aarch64-linux-gnu-
-        run: make O=build defconfig
-
-      - name: Build Debian packages
-        env:
-          ARCH: arm64
-          CROSS_COMPILE: aarch64-linux-gnu-
-          KDEB_PKGVERSION: "1.${{ github.run_number }}"
-          DEB_BUILD_OPTIONS: nocheck
-        run: |
-          make O=build -j$(nproc)
-          make O=build bindeb-pkg -j$(nproc)
-
-      - name: Collect build artifacts
-        run: |
-          mkdir -p artifacts
-          find .. -maxdepth 1 -type f -name 'linux-*.deb' -print -exec cp {} artifacts/ \;
-
-      - name: Upload kernel packages
+      - name: Upload build artefact
         uses: actions/upload-artifact@v4
         with:
-          name: cubie-kernel-debs
-          path: artifacts
+          name: cubie-kernel-artifact
+          path: out
           if-no-files-found: error
