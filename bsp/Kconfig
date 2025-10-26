@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: GPL-2.0-only
+#
+# Radxa Cubie board-support integration
+#
+
+menu "Board support package"
+
+comment "Run bsp/fetch-linux-a733.sh to populate bsp/linux-a733"
+
+source "bsp/linux-a733/Kconfig"
+
+endmenu
