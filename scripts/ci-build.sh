@@ -64,21 +64,45 @@ fi
 log "Generating ${DEFCONFIG}"
 make -C "${REPO_ROOT}" O="${BUILD_DIR}" ARCH="${ARCH}" CROSS_COMPILE="${CROSS_COMPILE}" "${DEFCONFIG}"
 
-log "Building kernel image, modules, and device trees"
+config_file="${BUILD_DIR}/.config"
+modules_enabled=false
+if [[ -f "${config_file}" ]]; then
+  if grep -q '^CONFIG_MODULES=y' "${config_file}"; then
+    modules_enabled=true
+    log "Detected CONFIG_MODULES=y; modules will be built"
+  else
+    log "CONFIG_MODULES is disabled; skipping module build and installation"
+  fi
+else
+  log "Warning: kernel configuration ${config_file} not found; assuming modules enabled"
+  modules_enabled=true
+fi
+
+if [[ "${modules_enabled}" == true ]]; then
+  build_targets=(zImage modules dtbs)
+  log "Building kernel image, modules, and device trees"
+else
+  build_targets=(zImage dtbs)
+  log "Building kernel image and device trees"
+fi
 make -C "${REPO_ROOT}" \
      O="${BUILD_DIR}" \
      ARCH="${ARCH}" \
      CROSS_COMPILE="${CROSS_COMPILE}" \
      -j"${JOBS}" \
-     zImage modules dtbs
+     "${build_targets[@]}"
 
-log "Installing kernel modules"
-make -C "${REPO_ROOT}" \
-     O="${BUILD_DIR}" \
-     ARCH="${ARCH}" \
-     CROSS_COMPILE="${CROSS_COMPILE}" \
-     INSTALL_MOD_PATH="${MODULES_DIR}" \
-     modules_install
+if [[ "${modules_enabled}" == true ]]; then
+  log "Installing kernel modules"
+  make -C "${REPO_ROOT}" \
+       O="${BUILD_DIR}" \
+       ARCH="${ARCH}" \
+       CROSS_COMPILE="${CROSS_COMPILE}" \
+       INSTALL_MOD_PATH="${MODULES_DIR}" \
+       modules_install
+else
+  rm -rf "${MODULES_DIR}"
+fi
 
 kernel_release=$(make -s -C "${REPO_ROOT}" O="${BUILD_DIR}" ARCH="${ARCH}" CROSS_COMPILE="${CROSS_COMPILE}" kernelrelease)
 log "Kernel release: ${kernel_release}"
@@ -147,7 +171,11 @@ git_status="$(git -C "${REPO_ROOT}" status --short || true)"
     done < "${checksum_file}"
     echo
   fi
-  echo "Modules installed under: ${MODULES_DIR}"
+  if [[ "${modules_enabled}" == true ]]; then
+    echo "Modules installed under: ${MODULES_DIR}"
+  else
+    echo "Modules were not built"
+  fi
 } > "${ARTIFACT_FILE}"
 
 log "Build artefacts available in ${ARTIFACT_DIR}"
