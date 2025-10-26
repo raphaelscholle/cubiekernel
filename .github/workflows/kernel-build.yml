@@ -1,0 +1,80 @@
+name: Kernel build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-deb:
+    name: Build Debian packages
+    runs-on: ubuntu-22.04
+    env:
+      ARCH: arm64
+      CROSS_COMPILE: aarch64-linux-gnu-
+      CCACHE_DIR: ~/.ccache
+      DEBEMAIL: github-actions@users.noreply.github.com
+      DEBFULLNAME: GitHub Actions
+      KDEB_PKGVERSION: ${{ github.run_number }}
+      KBUILD_BUILD_USER: github
+      KBUILD_BUILD_HOST: actions
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ${{ runner.os }}-arm64-ccache-${{ github.ref }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-arm64-ccache-${{ github.ref }}
+            ${{ runner.os }}-arm64-ccache-
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            bc \
+            bison \
+            build-essential \
+            ccache \
+            cpio \
+            dpkg-dev \
+            dwarves \
+            fakeroot \
+            flex \
+            gcc-aarch64-linux-gnu \
+            g++-aarch64-linux-gnu \
+            kmod \
+            libelf-dev \
+            libncurses-dev \
+            libssl-dev \
+            rsync \
+            python3
+
+      - name: Configure kernel for arm64
+        run: |
+          make O=build defconfig
+
+      - name: Build Debian packages
+        run: |
+          fakeroot make O=build -j"$(nproc)" bindeb-pkg
+
+      - name: Collect Debian artifacts
+        run: |
+          mkdir -p artifacts
+          find . -maxdepth 1 -type f -name '*.deb' -print -exec mv {} artifacts/ \;
+
+      - name: List packaged files
+        run: ls -1 artifacts
+
+      - name: Upload Debian packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-arm64-debs
+          path: artifacts/*.deb
+          if-no-files-found: error
