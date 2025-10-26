@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: GPL-2.0-only
+#
+# Placeholder Kconfig until the Radxa BSP is fetched. The real
+# configuration symbols become available once
+# bsp/fetch-linux-a733.sh has been executed.
+#
+menu "Radxa linux-a733 BSP (placeholder)"
+
+comment "Run bsp/fetch-linux-a733.sh to populate this menu"
+
+endmenu

@@ -7,6 +7,6 @@ menu "Board support package"
 
 comment "Run bsp/fetch-linux-a733.sh to populate bsp/linux-a733"
 
-osource "bsp/linux-a733/Kconfig"
+source "bsp/linux-a733/Kconfig"
 
 endmenu

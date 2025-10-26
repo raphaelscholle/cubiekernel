@@ -1,1 +1,3 @@
-bsp/linux-a733/
+bsp/linux-a733/*
+!bsp/linux-a733/.placeholder
+!bsp/linux-a733/Kconfig

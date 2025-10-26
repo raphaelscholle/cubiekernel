@@ -12,6 +12,11 @@ fi
 
 BSP_DIR=$(dirname "$0")/linux-a733
 
+if [ -f "$BSP_DIR/.placeholder" ]; then
+    echo "Removing placeholder BSP directory" >&2
+    rm -rf "$BSP_DIR"
+fi
+
 if [ -d "$BSP_DIR/.git" ]; then
     echo "Updating existing linux-a733 BSP repository" >&2
     exec "$GIT" -C "$BSP_DIR" pull --ff-only
